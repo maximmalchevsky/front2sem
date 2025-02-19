@@ -1,0 +1,21 @@
+$primary-color: #00aac3;
+$secondary-color: #8056b3;
+$font-family: Arial, sans-serif;
+
+body {
+  font-family: $font-family;
+  margin: 20px;
+}
+
+.btn-custom {
+  background-color: $primary-color;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
+
+  &:hover {
+    background-color: $secondary-color;
+}
+}
