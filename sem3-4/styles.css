@@ -4,15 +4,16 @@ body {
 }
 
 .btn-custom {
-  background-color: #007bff;
+  background-color: #daaac3;
   color: white;
   padding: 10px 20px;
   border: none;
   cursor: pointer;
   transition: 0.3s;
+  border-radius: 15px;
 }
 .btn-custom:hover {
-  background-color: #0056b3;
+  background-color: #8056b3;
 }
 
-
+/*# sourceMappingURL=styles.css.map */
