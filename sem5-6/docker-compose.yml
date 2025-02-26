@@ -48,6 +48,7 @@ services:
 
   nginx:
     image: nginx:stable-alpine
+    container_name: nginx
     ports:
       - "80:80"
     volumes:
@@ -60,6 +61,7 @@ services:
       - app_network
 
   backend:
+    container_name: backend
     build:
       context: ./server
     networks:
