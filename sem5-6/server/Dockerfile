@@ -10,3 +10,4 @@ RUN go build -o /main ./main.go
 FROM alpine:3
 COPY --from=builder main /bin/main
 ENTRYPOINT ["/bin/main"]
+
