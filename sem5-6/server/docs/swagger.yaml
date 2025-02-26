@@ -75,19 +75,23 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Данные продукта
+      - description: Данные продуктов
         in: body
-        name: product
+        name: products
         required: true
         schema:
-          $ref: '#/definitions/main.CreateProductRequest'
+          items:
+            $ref: '#/definitions/main.CreateProductRequest'
+          type: array
       produces:
       - application/json
       responses:
         "200":
-          description: Продукт успешно добавлен
+          description: Продукты успешно добавлены
           schema:
-            $ref: '#/definitions/main.Product'
+            items:
+              $ref: '#/definitions/main.Product'
+            type: array
         "400":
           description: Некорректный запрос
           schema:
@@ -96,7 +100,7 @@ paths:
           description: Ошибка на сервере
           schema:
             $ref: '#/definitions/main.ErrorResponse'
-      summary: Добавить новый продукт
+      summary: Добавить один или несколько продуктов
       tags:
       - Products
   /api/products/{id}:

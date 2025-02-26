@@ -47,23 +47,29 @@
                 "tags": [
                     "Products"
                 ],
-                "summary": "Добавить новый продукт",
+                "summary": "Добавить один или несколько продуктов",
                 "parameters": [
                     {
-                        "description": "Данные продукта",
-                        "name": "product",
+                        "description": "Данные продуктов",
+                        "name": "products",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.CreateProductRequest"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/main.CreateProductRequest"
+                            }
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Продукт успешно добавлен",
+                        "description": "Продукты успешно добавлены",
                         "schema": {
-                            "$ref": "#/definitions/main.Product"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/main.Product"
+                            }
                         }
                     },
                     "400": {

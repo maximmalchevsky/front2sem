@@ -89,28 +89,38 @@ func getProducts(c *fiber.Ctx) error {
 	return c.JSON(products)
 }
 
-// @Summary Добавить новый продукт
+// @Summary Добавить один или несколько продуктов
 // @Tags Products
 // @Accept json
 // @Produce json
-// @Param product body CreateProductRequest true "Данные продукта"
-// @Success 200 {object} Product "Продукт успешно добавлен"
+// @Param products body []CreateProductRequest true "Данные продуктов"
+// @Success 200 {array} Product "Продукты успешно добавлены"
 // @Failure 400 {object} ErrorResponse "Некорректный запрос"
 // @Failure 500 {object} ErrorResponse "Ошибка на сервере"
 // @Router /api/products [post]
-func addProduct(c *fiber.Ctx) error {
-	var product Product
-	if err := c.BodyParser(&product); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Invalid request"})
+func addProducts(c *fiber.Ctx) error {
+	var products []Product
+
+	// Проверяем, пришел ли массив или одиночный объект
+	if err := c.BodyParser(&products); err != nil {
+		// Попробуем спарсить как одиночный объект
+		var singleProduct Product
+		if err := c.BodyParser(&singleProduct); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Invalid request"})
+		}
+		products = append(products, singleProduct)
 	}
 
-	// Вставляем продукт с категориями
 	query := "INSERT INTO products (name, price, description, categories) VALUES ($1, $2, $3, $4) RETURNING id"
-	err := db.QueryRow(query, product.Name, product.Price, product.Description, pq.Array(product.Categories)).Scan(&product.ID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: err.Error()})
+
+	for i := range products {
+		err := db.QueryRow(query, products[i].Name, products[i].Price, products[i].Description, pq.Array(products[i].Categories)).Scan(&products[i].ID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: err.Error()})
+		}
 	}
-	return c.JSON(product)
+
+	return c.JSON(products)
 }
 
 // @Summary Обновить данные продукта
@@ -172,7 +182,7 @@ func main() {
 
 	// API endpoints
 	app.Get("/products", getProducts)
-	app.Post("/products", addProduct)
+	app.Post("/products", addProducts)
 	app.Put("/products/:id", updateProduct)
 	app.Delete("/products/:id", deleteProduct)
 	app.Get("/health", healthCheck)
