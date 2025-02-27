@@ -55,6 +55,7 @@ services:
       - './nginx.conf:/etc/nginx/nginx.conf'
       - './.htpasswd:/etc/nginx/.htpasswd'
       - './server/index.html:/usr/share/nginx/html/index.html'
+      - './server/admin.html:/usr/share/nginx/html/admin.html'
     depends_on:
       - backend
     networks:
