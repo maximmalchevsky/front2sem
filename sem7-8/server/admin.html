@@ -66,7 +66,6 @@
             display: flex;
             gap: 10px;
         }
-        /* Стили для чата */
         #chat {
             width: 100%;
             border: 1px solid #ddd;
@@ -113,7 +112,6 @@
     <h2>Список товаров</h2>
     <div id="products"></div>
 
-    <!-- Чат поддержки -->
     <div id="chat">
         <h3>Чат поддержки</h3>
         <div id="chat-messages"></div>
@@ -124,8 +122,8 @@
 </div>
 
 <script>
-    const apiUrl = '/api/products';  // Изменили на /api/products
-    const wsUrl = '/ws';  // Изменили на /ws
+    const wsUrl = '/ws';
+    const apiUrl = '/api/products';
 
     async function fetchProducts() {
         try {
@@ -139,14 +137,14 @@
             list.innerHTML = '';
             products.forEach(product => {
                 list.innerHTML += `
-          <div class="product" id="product-${product.id}">
-            <strong>${product.name}</strong> - ${product.price} руб.
-            <p>${product.description}</p>
-            <p>Категории: ${product.categories.join(', ')}</p>
-            <button onclick="deleteProduct(${product.id})">Удалить</button>
-            <button onclick="editProduct(${product.id})">Редактировать</button>
-          </div>
-        `;
+            <div class="product" id="product-${product.id}">
+              <strong>${product.name}</strong> - ${product.price} руб.
+              <p>${product.description}</p>
+              <p>Категории: ${product.categories.join(', ')}</p>
+              <button onclick="deleteProduct(${product.id})">Удалить</button>
+              <button onclick="editProduct(${product.id})">Редактировать</button>
+            </div>
+          `;
             });
         } catch (error) {
             console.error('Ошибка при загрузке товаров:', error);
@@ -155,14 +153,14 @@
 
     function addProductForm() {
         const productFormHTML = `
-      <div class="product-form">
-        <input type="text" class="name" placeholder="Название">
-        <input type="number" class="price" placeholder="Цена">
-        <input type="text" class="description" placeholder="Описание">
-        <input type="text" class="categories" placeholder="Категории (через запятую)">
-        <button onclick="removeProductForm(this)">Удалить</button>
-      </div>
-    `;
+        <div class="product-form">
+          <input type="text" class="name" placeholder="Название">
+          <input type="number" class="price" placeholder="Цена">
+          <input type="text" class="description" placeholder="Описание">
+          <input type="text" class="categories" placeholder="Категории (через запятую)">
+          <button onclick="removeProductForm(this)">Удалить</button>
+        </div>
+      `;
         const buttonsBlock = document.querySelector('.add-products-buttons');
         buttonsBlock.insertAdjacentHTML('beforebegin', productFormHTML);
     }
@@ -210,18 +208,18 @@
             } else {
                 fetchProducts();
                 document.getElementById('add-products-form').innerHTML = `
-          <div class="product-form">
-            <input type="text" class="name" placeholder="Название">
-            <input type="number" class="price" placeholder="Цена">
-            <input type="text" class="description" placeholder="Описание">
-            <input type="text" class="categories" placeholder="Категории (через запятую)">
-            <button onclick="removeProductForm(this)">Удалить</button>
-          </div>
-          <div class="add-products-buttons">
-            <button onclick="addProductForm()">Добавить еще товар</button>
-            <button onclick="addProducts()">Добавить товары</button>
-          </div>
-        `;
+            <div class="product-form">
+              <input type="text" class="name" placeholder="Название">
+              <input type="number" class="price" placeholder="Цена">
+              <input type="text" class="description" placeholder="Описание">
+              <input type="text" class="categories" placeholder="Категории (через запятую)">
+              <button onclick="removeProductForm(this)">Удалить</button>
+            </div>
+            <div class="add-products-buttons">
+              <button onclick="addProductForm()">Добавить еще товар</button>
+              <button onclick="addProducts()">Добавить товары</button>
+            </div>
+          `;
             }
         } catch (error) {
             console.error('Ошибка при отправке запроса:', error);
@@ -282,7 +280,6 @@
         }
     }
 
-    // WebSocket чат
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
 
     socket.onopen = () => console.log('WebSocket подключен');

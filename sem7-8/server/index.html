@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Каталог товаров</title>
     <style>
-        /* Стили для карточек товаров и чата */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -57,7 +56,6 @@
             text-align: center;
             margin-top: 50px;
         }
-        /* Стили для чата */
         #chat {
             width: 80%;
             max-width: 600px;
@@ -100,7 +98,6 @@
 </div>
 
 <script>
-    // Функция для получения товаров через GraphQL
     async function fetchProducts() {
         const query = `
       {
@@ -139,8 +136,6 @@
             console.error('Error fetching products:', error);
         }
     }
-
-    // WebSocket чат
     const socket = new WebSocket('ws://localhost/ws'); // Путь обновлен
 
     socket.onopen = () => console.log('WebSocket подключен');

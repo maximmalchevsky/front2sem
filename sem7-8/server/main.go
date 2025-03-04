@@ -48,8 +48,6 @@ type Product struct {
 	Categories  []string `json:"categories"`
 }
 
-// ------------------------- REST API HANDLERS -------------------------
-
 // @Summary Получение списка всех продуктов
 // @Tags Products
 // @Accept json
@@ -157,9 +155,6 @@ func deleteProduct(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Product deleted successfully"})
 }
 
-// ------------------------- GRAPHQL API -------------------------
-
-// Определяем GraphQL-тип для товара
 var productType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Product",
@@ -174,7 +169,7 @@ var productType = graphql.NewObject(
 )
 
 func createSchema() graphql.Schema {
-	// Корневой запрос: получение списка товаров
+
 	rootQuery := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
@@ -210,25 +205,18 @@ func createSchema() graphql.Schema {
 	return schema
 }
 
-// ------------------------- WEBSOCKET CHAT -------------------------
-
-// Message описывает сообщение чата
 type Message struct {
 	Username string `json:"username"`
 	Message  string `json:"message"`
 }
 
-// clients хранит всех подключённых клиентов
 var clients = make(map[*websocket.Conn]bool)
 
-// broadcast канал для рассылки сообщений
 var broadcast = make(chan Message)
 
 func handleMessages() {
 	for {
-		// Принимаем сообщение из канала
 		msg := <-broadcast
-		// Отправляем сообщение всем клиентам
 		for client := range clients {
 			if err := client.WriteJSON(msg); err != nil {
 				client.Close()
@@ -246,16 +234,12 @@ func main() {
 	defer db.Close()
 
 	app := fiber.New()
-
-	// REST API endpoints
-	api := app.Group("/api")
-	api.Get("/products", getProducts)
-	api.Post("/products", addProducts)
-	api.Put("/products/:id", updateProduct)
-	api.Delete("/products/:id", deleteProduct)
+	app.Get("/products", getProducts)
+	app.Post("/products", addProducts)
+	app.Put("/products/:id", updateProduct)
+	app.Delete("/products/:id", deleteProduct)
 	app.Get("/health", func(c *fiber.Ctx) error { return c.SendString("hello") })
 
-	// GraphQL endpoint
 	schema := createSchema()
 	graphqlHandler := handler.New(&handler.Config{
 		Schema: &schema,
@@ -263,8 +247,7 @@ func main() {
 	})
 	app.All("/graphql", adaptor.HTTPHandler(graphqlHandler))
 
-	// WebSocket endpoint для чата
-	go handleMessages() // запуск горутины для рассылки сообщений
+	go handleMessages()
 
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
 		// Регистрируем клиента
@@ -282,7 +265,6 @@ func main() {
 		}
 	}))
 
-	// Swagger документация
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	log.Println("Server running on port 8080")
