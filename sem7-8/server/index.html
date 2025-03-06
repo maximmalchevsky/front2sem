@@ -136,7 +136,7 @@
             console.error('Error fetching products:', error);
         }
     }
-    const socket = new WebSocket('ws://localhost/ws'); // Путь обновлен
+    const socket = new WebSocket('ws://localhost/ws');
 
     socket.onopen = () => console.log('WebSocket подключен');
     socket.onmessage = (event) => {
