@@ -79,16 +79,36 @@
         #chat button {
             padding: 5px 10px;
         }
+        #fields-selector {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #fields-selector label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
     </style>
 </head>
 <body>
 
 <h1>Каталог товаров</h1>
 
+<!-- Выбор полей -->
+<div id="fields-selector">
+    <label><input type="checkbox" id="field-name" checked> Название</label>
+    <label><input type="checkbox" id="field-price" checked> Цена</label>
+    <label><input type="checkbox" id="field-description"> Описание</label>
+    <label><input type="checkbox" id="field-categories"> Категории</label>
+    <button onclick="applyFieldSelection()">Применить</button>
+</div>
+
 <div class="loading" id="loading">Загрузка...</div>
 <div class="container" id="product-container"></div>
 
-<!-- Чат -->
 <div id="chat">
     <h3>Чат поддержки</h3>
     <div id="chat-messages"></div>
@@ -98,44 +118,74 @@
 </div>
 
 <script>
-    async function fetchProducts() {
-        const query = `
-      {
-        products {
-          name
-          price
-          description
-          categories
-        }
-      }
-    `;
+    function buildQuery(selectedFields) {
+        const fields = selectedFields.map(field => `\n          ${field}`).join('');
+        return `
+            query GetProducts {
+                products {
+                    ${fields}
+                }
+            }
+        `;
+    }
+
+
+    async function fetchProducts(selectedFields) {
+        const query = buildQuery(selectedFields);
         try {
             const response = await fetch('/graphql', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query })
+                body: JSON.stringify({ query }),
             });
             const result = await response.json();
             document.getElementById('loading').style.display = 'none';
             const container = document.getElementById('product-container');
             container.innerHTML = '';
 
-            result.data.products.forEach(product => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-          <h3>${product.name}</h3>
-          <p class="price">${product.price} руб.</p>
-          <p class="description">${product.description}</p>
-          <p class="categories"><strong>Категории:</strong> ${product.categories.join(', ')}</p>
-        `;
-                container.appendChild(card);
-            });
+            if (result.data && result.data.products) {
+                result.data.products.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    let cardContent = '';
+
+                    if (selectedFields.includes('name')) {
+                        cardContent += `<h3>${product.name}</h3>`;
+                    }
+                    if (selectedFields.includes('price')) {
+                        cardContent += `<p class="price">${product.price} руб.</p>`;
+                    }
+                    if (selectedFields.includes('description')) {
+                        cardContent += `<p class="description">${product.description}</p>`;
+                    }
+                    if (selectedFields.includes('categories')) {
+                        cardContent += `<p class="categories"><strong>Категории:</strong> ${product.categories.join(', ')}</p>`;
+                    }
+
+                    card.innerHTML = cardContent;
+                    container.appendChild(card);
+                });
+            } else {
+                container.innerHTML = '<p>Товары не найдены</p>';
+            }
         } catch (error) {
             document.getElementById('loading').innerText = 'Ошибка загрузки данных!';
             console.error('Error fetching products:', error);
         }
     }
+
+
+    function applyFieldSelection() {
+        const selectedFields = [];
+        if (document.getElementById('field-name').checked) selectedFields.push('name');
+        if (document.getElementById('field-price').checked) selectedFields.push('price');
+        if (document.getElementById('field-description').checked) selectedFields.push('description');
+        if (document.getElementById('field-categories').checked) selectedFields.push('categories');
+
+        fetchProducts(selectedFields);
+    }
+
+
     const socket = new WebSocket('ws://localhost/ws');
 
     socket.onopen = () => console.log('WebSocket подключен');
@@ -156,8 +206,7 @@
         }
     }
 
-    window.onload = fetchProducts;
+    window.onload = () => fetchProducts(['name', 'price', 'description', 'categories']);
 </script>
-
 </body>
 </html>
