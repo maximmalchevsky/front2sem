@@ -194,8 +194,30 @@
         }
     });
 
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+
+        try {
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, password})
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            showMessage('Registration successful!', false);
+            switchTab('login'); // Переключить на вкладку логина
+        } catch (err) {
+            showMessage(err.message, true);
+        }
+    });
+
     async function validateToken() {
-        const res = await fetch('/api/me', {
+        const res = await fetch('/api/auth/me', {
             headers: {'Authorization': `Bearer ${accessToken}`}
         });
         if (!res.ok) throw new Error('Invalid token');
@@ -219,7 +241,7 @@
 
     async function getProtectedData() {
         try {
-            const res = await fetch('/api/protected', {
+            const res = await fetch('/api/auth/protected', {
                 headers: {'Authorization': `Bearer ${accessToken}`}
             });
 
@@ -229,7 +251,8 @@
             }
 
             const data = await res.json();
-            document.getElementById('secretData').textContent = data.message;
+            console.log(data)
+            document.getElementById('secretData').textContent = `User id: ${data.user_id}`;
         } catch (err) {
             showMessage(err.message, true);
         }
@@ -253,7 +276,7 @@
 
     async function loadProfile() {
         try {
-            const res = await fetch('/api/me', {
+            const res = await fetch('/api/auth/me', {
                 headers: {'Authorization': `Bearer ${accessToken}`}
             });
             const data = await res.json();
@@ -263,6 +286,8 @@
             showMessage(err.message, true);
         }
     }
+
+
 
     function showMessage(text, isError) {
         const msg = document.getElementById('message');

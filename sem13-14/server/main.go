@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
@@ -44,45 +45,49 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app := fiber.New()
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+	router := gin.Default()
+
+	// CORS configuration
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
 	}))
 
 	// Routes
-	app.Post("/api/register", register)
-	app.Post("/api/login", login)
-	app.Get("/api/me", authMiddleware, getProfile)
-	app.Post("/api/refresh", refreshToken)
-	app.Get("/api/protected", authMiddleware, protected)
+	router.POST("/register", register)
+	router.POST("/login", login)
+	router.POST("/refresh", refreshToken)
 
-	log.Fatal(app.Listen(":8080"))
+	auth := router.Group("/auth")
+	auth.Use(authMiddleware)
+	auth.GET("/me", getProfile)
+	auth.GET("/protected", protected)
+
+	router.Run(":8080")
 }
 
-func authMiddleware(c *fiber.Ctx) error {
-	authHeader := c.Get("Authorization")
+func authMiddleware(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		return c.Status(401).JSON(fiber.Map{"error": "Authorization header is required"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
+		return
 	}
 
-	// Разбиваем заголовок по пробелу
 	parts := strings.Split(authHeader, " ")
 	if len(parts) != 2 {
-		return c.Status(401).JSON(fiber.Map{"error": "Invalid authorization header format"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
+		return
 	}
 
-	// Проверяем схему (Bearer)
 	if parts[0] != "Bearer" {
-		return c.Status(401).JSON(fiber.Map{"error": "Authorization scheme not supported"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization scheme not supported"})
+		return
 	}
 
 	tokenString := parts[1]
-	if tokenString == "" {
-		return c.Status(401).JSON(fiber.Map{"error": "Token is empty"})
-	}
-
-	// Парсим токен
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
@@ -90,67 +95,70 @@ func authMiddleware(c *fiber.Ctx) error {
 		return []byte(cfg.JWTSecret), nil
 	})
 
-	if err != nil {
-		return c.Status(401).JSON(fiber.Map{"error": "Invalid token", "details": err.Error()})
-	}
-
-	if !token.Valid {
-		return c.Status(401).JSON(fiber.Map{"error": "Token is invalid"})
+	if err != nil || !token.Valid {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return c.Status(401).JSON(fiber.Map{"error": "Invalid token claims"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		return
 	}
 
-	c.Locals("userID", claims["sub"])
-	return c.Next()
+	c.Set("userID", claims["sub"])
+	c.Next()
 }
 
-// Handlers
-func register(c *fiber.Ctx) error {
+func register(c *gin.Context) {
 	var req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Bad request"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
+		return
 	}
 
-	// Check existing user
 	var exists bool
-	db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", req.Email).Scan(&exists)
-	if exists {
-		return c.Status(400).JSON(fiber.Map{"error": "User exists"})
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", req.Email).Scan(&exists)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
 	}
 
-	// Hash password
+	if exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User exists"})
+		return
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Internal error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal error"})
+		return
 	}
 
-	// Create user
 	_, err = db.Exec("INSERT INTO users (email, password) VALUES ($1, $2)", req.Email, string(hash))
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
 	}
 
-	return c.JSON(fiber.Map{"message": "User created"})
+	c.JSON(http.StatusOK, gin.H{"message": "User created"})
 }
 
-func login(c *fiber.Ctx) error {
+func login(c *gin.Context) {
 	var req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Bad request"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
+		return
 	}
 
-	// Get user
 	var user struct {
 		ID       int
 		Email    string
@@ -163,34 +171,33 @@ func login(c *fiber.Ctx) error {
 	).Scan(&user.ID, &user.Email, &user.Password)
 
 	if err != nil {
-		return c.Status(401).JSON(fiber.Map{"error": "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
 	}
 
-	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		return c.Status(401).JSON(fiber.Map{"error": "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
 	}
 
-	// Generate tokens
 	accessToken, refreshToken, err := generateTokens(user.ID)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Token error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token error"})
+		return
 	}
 
-	return c.JSON(fiber.Map{
+	c.JSON(http.StatusOK, gin.H{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 	})
 }
 
 func generateTokens(userID int) (string, string, error) {
-	// Access token (15m)
 	access := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": userID,
 		"exp": time.Now().Add(15 * time.Minute).Unix(),
 	})
 
-	// Refresh token (7d)
 	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": userID,
 		"exp": time.Now().Add(168 * time.Hour).Unix(),
@@ -202,13 +209,14 @@ func generateTokens(userID int) (string, string, error) {
 	return accessSigned, refreshSigned, nil
 }
 
-func refreshToken(c *fiber.Ctx) error {
+func refreshToken(c *gin.Context) {
 	var req struct {
 		RefreshToken string `json:"refresh_token"`
 	}
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Bad request"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
+		return
 	}
 
 	token, err := jwt.Parse(req.RefreshToken, func(t *jwt.Token) (interface{}, error) {
@@ -216,25 +224,32 @@ func refreshToken(c *fiber.Ctx) error {
 	})
 
 	if err != nil || !token.Valid {
-		return c.Status(401).JSON(fiber.Map{"error": "Invalid token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
-	userID := int(claims["sub"].(float64))
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		return
+	}
 
+	userID := int(claims["sub"].(float64))
 	access, refresh, err := generateTokens(userID)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Token error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token error"})
+		return
 	}
 
-	return c.JSON(fiber.Map{
+	c.JSON(http.StatusOK, gin.H{
 		"access_token":  access,
 		"refresh_token": refresh,
 	})
 }
 
-func getProfile(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(float64)
+func getProfile(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	id := int(userID.(float64))
 
 	var user struct {
 		Email     string    `json:"email"`
@@ -243,19 +258,26 @@ func getProfile(c *fiber.Ctx) error {
 
 	err := db.QueryRow(
 		"SELECT email, created_at FROM users WHERE id = $1",
-		int(userID),
+		id,
 	).Scan(&user.Email, &user.CreatedAt)
 
 	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "User not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
 	}
 
-	return c.JSON(user)
+	c.JSON(http.StatusOK, gin.H{
+		"id":         id,
+		"email":      user.Email,
+		"created_at": user.CreatedAt,
+	})
 }
 
-func protected(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
+func protected(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	fmt.Println(userID)
+	c.JSON(http.StatusOK, gin.H{
 		"message": "Secret data",
-		"user_id": c.Locals("userID"),
+		"user_id": userID,
 	})
 }
