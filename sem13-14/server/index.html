@@ -209,7 +209,7 @@
             if (!res.ok) throw new Error(data.error);
 
             showMessage('Registration successful!', false);
-            switchTab('login'); // Переключить на вкладку логина
+            switchTab('login');
         } catch (err) {
             showMessage(err.message, true);
         }
