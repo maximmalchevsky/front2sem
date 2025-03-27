@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth App</title>
     <style>
+        #secretData {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+
+        #secretData code {
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #dc3545;
+        }
         * {
             box-sizing: border-box;
             margin: 0;
@@ -250,8 +263,10 @@
             }
 
             const data = await res.json();
-            console.log(data)
-            document.getElementById('secretData').textContent = `User id: ${data.user_id}`;
+            document.getElementById('secretData').innerHTML = `
+                <p>User ID: ${data.user_id}</p>
+                <p>JWT Token: <code>${data.token}</code></p>
+            `;
         } catch (err) {
             showMessage(err.message, true);
         }

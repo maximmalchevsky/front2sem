@@ -102,6 +102,7 @@ func authMiddleware(c *gin.Context) {
 		return
 	}
 
+	c.Set("accessToken", tokenString)
 	c.Set("userID", claims["sub"])
 	c.Next()
 }
@@ -271,9 +272,10 @@ func getProfile(c *gin.Context) {
 
 func protected(c *gin.Context) {
 	userID, _ := c.Get("userID")
-	fmt.Println(userID)
+	token, _ := c.Get("accessToken")
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Secret data",
 		"user_id": userID,
+		"token":   token,
 	})
 }
