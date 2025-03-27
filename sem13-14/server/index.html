@@ -115,7 +115,6 @@
 </head>
 <body>
 <div class="container">
-    <!-- Auth Forms -->
     <div class="auth-box" id="authBox">
         <div class="tabs">
             <button class="tab active" onclick="switchTab('login')">Login</button>
@@ -135,7 +134,7 @@
         </form>
     </div>
 
-    <!-- Protected Content -->
+
     <div class="protected-box hidden" id="protectedBox">
         <h2>Welcome, <span id="userEmail"></span>!</h2>
         <div class="profile">
@@ -146,7 +145,7 @@
         <div id="secretData"></div>
     </div>
 
-    <!-- Messages -->
+
     <div id="message"></div>
 </div>
 
@@ -154,7 +153,7 @@
     let accessToken = localStorage.getItem('access_token');
     let refreshToken = localStorage.getItem('refresh_token');
 
-    // Initial check
+
     document.addEventListener('DOMContentLoaded', async () => {
         if (accessToken) {
             try {
@@ -166,7 +165,7 @@
         }
     });
 
-    // Forms
+
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value;
