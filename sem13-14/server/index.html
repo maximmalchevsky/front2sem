@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth App</title>
     <style>
+        #secretData {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+
+        #secretData code {
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #dc3545;
+        }
         * {
             box-sizing: border-box;
             margin: 0;
@@ -115,7 +128,6 @@
 </head>
 <body>
 <div class="container">
-    <!-- Auth Forms -->
     <div class="auth-box" id="authBox">
         <div class="tabs">
             <button class="tab active" onclick="switchTab('login')">Login</button>
@@ -135,7 +147,7 @@
         </form>
     </div>
 
-    <!-- Protected Content -->
+
     <div class="protected-box hidden" id="protectedBox">
         <h2>Welcome, <span id="userEmail"></span>!</h2>
         <div class="profile">
@@ -146,7 +158,7 @@
         <div id="secretData"></div>
     </div>
 
-    <!-- Messages -->
+
     <div id="message"></div>
 </div>
 
@@ -154,7 +166,7 @@
     let accessToken = localStorage.getItem('access_token');
     let refreshToken = localStorage.getItem('refresh_token');
 
-    // Initial check
+
     document.addEventListener('DOMContentLoaded', async () => {
         if (accessToken) {
             try {
@@ -166,7 +178,7 @@
         }
     });
 
-    // Forms
+
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value;
@@ -210,7 +222,7 @@
             if (!res.ok) throw new Error(data.error);
 
             showMessage('Registration successful!', false);
-            switchTab('login'); // Переключить на вкладку логина
+            switchTab('login');
         } catch (err) {
             showMessage(err.message, true);
         }
@@ -251,8 +263,10 @@
             }
 
             const data = await res.json();
-            console.log(data)
-            document.getElementById('secretData').textContent = `User id: ${data.user_id}`;
+            document.getElementById('secretData').innerHTML = `
+                <p>User ID: ${data.user_id}</p>
+                <p>JWT Token: <code>${data.token}</code></p>
+            `;
         } catch (err) {
             showMessage(err.message, true);
         }

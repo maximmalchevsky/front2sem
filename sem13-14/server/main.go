@@ -21,7 +21,6 @@ var cfg *Config
 func main() {
 	cfg = LoadConfig()
 
-	// DB Connection
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName,
@@ -34,7 +33,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Create tables
 	if _, err := db.Exec(`
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -47,7 +45,6 @@ func main() {
 
 	router := gin.Default()
 
-	// CORS configuration
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -56,7 +53,6 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	// Routes
 	router.POST("/register", register)
 	router.POST("/login", login)
 	router.POST("/refresh", refreshToken)
@@ -106,6 +102,7 @@ func authMiddleware(c *gin.Context) {
 		return
 	}
 
+	c.Set("accessToken", tokenString)
 	c.Set("userID", claims["sub"])
 	c.Next()
 }
@@ -275,9 +272,10 @@ func getProfile(c *gin.Context) {
 
 func protected(c *gin.Context) {
 	userID, _ := c.Get("userID")
-	fmt.Println(userID)
+	token, _ := c.Get("accessToken")
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Secret data",
 		"user_id": userID,
+		"token":   token,
 	})
 }
