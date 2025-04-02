@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #333333;
+      --primary-color: #4a90e2;
+      --hover-color: #357abd;
+      --border-color: #dddddd;
+      --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark-theme {
+      --bg-color: #1a1a1a;
+      --text-color: #ffffff;
+      --primary-color: #6da8ff;
+      --hover-color: #4a90e2;
+      --border-color: #444444;
+      --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .profile-box {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: var(--box-shadow);
+    }
+
+    #dataContainer {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      padding: 1rem;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+
+    .logout-btn {
+      background-color: #e74c3c;
+      border-radius: 15px;
+    }
+
+    .logout-btn:hover {
+      background-color: #c0392b;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+    }
+
+    .refresh-btn {
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body class="light-theme">
+<div class="container">
+  <div class="profile-box">
+    <h1>Welcome, <span id="username"></span>!</h1>
+    <div class="data-section">
+      <button id="refreshData" class="refresh-btn">🔄 Refresh Data</button>
+      <pre id="dataContainer"></pre>
+    </div>
+    <button id="logout" class="logout-btn">Logout</button>
+  </div>
+</div>
+<button id="themeToggle" class="theme-toggle">🌓</button>
+
+<script>
+  // Theme Management
+  const savedTheme = localStorage.getItem('theme') || 'light-theme';
+  document.body.className = savedTheme;
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const newTheme = document.body.classList.contains('dark-theme')
+            ? 'light-theme'
+            : 'dark-theme';
+    document.body.className = newTheme;
+    localStorage.setItem('theme', newTheme);
+  });
+
+  // Check Authentication
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/profile', {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        window.location.href = '/index.html';
+      } else {
+        const userData = await response.json();
+        document.getElementById('username').textContent = userData.login;
+      }
+    } catch (error) {
+      window.location.href = '/index.html';
+    }
+  }
+
+  // Logout
+  document.getElementById('logout').addEventListener('click', async () => {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      window.location.href = '/index.html';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  });
+
+  // Data Handling
+  async function refreshData() {
+    try {
+      const response = await fetch('/api/data', {
+        credentials: 'include'
+      });
+      const data = await response.text();
+      document.getElementById('dataContainer').textContent = data;
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    }
+  }
+
+  document.getElementById('refreshData').addEventListener('click', refreshData);
+
+  // Initial Load
+  checkAuth();
+  refreshData();
+</script>
+</body>
+</html>
