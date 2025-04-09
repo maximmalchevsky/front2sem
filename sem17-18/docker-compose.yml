@@ -1,0 +1,10 @@
+
+services:
+  web:
+    container_name: nginx
+    build: .
+    ports:
+      - "80:80"
+    volumes:
+      - ./src:/usr/share/nginx/html
+    restart: unless-stopped
