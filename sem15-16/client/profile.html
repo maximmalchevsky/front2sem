@@ -103,7 +103,7 @@
     localStorage.setItem('theme', newTheme);
   });
 
-  // Check Authentication
+
   async function checkAuth() {
     try {
       const response = await fetch('/api/profile', {
@@ -121,7 +121,7 @@
     }
   }
 
-  // Logout
+
   document.getElementById('logout').addEventListener('click', async () => {
     try {
       await fetch('/api/logout', {
@@ -134,7 +134,7 @@
     }
   });
 
-  // Data Handling
+
   async function refreshData() {
     try {
       const response = await fetch('/api/data', {
@@ -149,7 +149,7 @@
 
   document.getElementById('refreshData').addEventListener('click', refreshData);
 
-  // Initial Load
+
   checkAuth();
   refreshData();
 </script>
