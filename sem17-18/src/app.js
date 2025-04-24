@@ -30,30 +30,37 @@ function registerServiceWorker() {
 }
 
 function handleSaveNote() {
-    const input = document.getElementById('note-input');
-    const content = input.value.trim();
-    if (!content) return;
+    const titleInput = document.getElementById('title-input');
+    const contentInput = document.getElementById('content-input');
+
+    const title = titleInput.value.trim();
+    const content = contentInput.value.trim();
+
+    if (!title && !content) return;
 
     const notes = JSON.parse(localStorage.getItem('notes') || '[]');
 
     if (isEditing) {
         const index = notes.findIndex(n => n.id === currentEditId);
         if (index !== -1) {
-            notes[index].content = content;
-            isEditing = false;
-            currentEditId = null;
-            document.getElementById('save-btn').textContent = 'Добавить';
+            notes[index] = {
+                ...notes[index],
+                title: title || 'Без названия',
+                content: content || ''
+            };
+            resetForm();
         }
     } else {
         notes.push({
             id: Date.now(),
-            content,
+            title: title || 'Без названия',
+            content: content || '',
             created: new Date().toISOString()
         });
     }
 
     localStorage.setItem('notes', JSON.stringify(notes));
-    input.value = '';
+    resetForm();
     renderNotes(notes);
 }
 
@@ -61,8 +68,8 @@ function handleNoteActions(e) {
     if (e.target.classList.contains('delete-btn')) {
         const id = Number(e.target.dataset.id);
         deleteNote(id);
-    } else if (e.target.classList.contains('note-content')) {
-        const id = Number(e.target.dataset.id);
+    } else if (e.target.closest('.note-content')) {
+        const id = Number(e.target.closest('.note-content').dataset.id);
         startEdit(id);
     }
 }
@@ -71,11 +78,14 @@ function renderNotes(notes) {
     const list = document.getElementById('notes-list');
     list.innerHTML = '';
 
-    notes.forEach(note => {
+    notes.sort((a, b) => new Date(b.created) - new Date(a.created)).forEach(note => {
         const noteElement = document.createElement('div');
         noteElement.className = 'note';
         noteElement.innerHTML = `
-            <div class="note-content" data-id="${note.id}">${note.content}</div>
+            <div class="note-content" data-id="${note.id}">
+                <div class="note-header">${note.title}</div>
+                <div class="note-body">${note.content}</div>
+            </div>
             <button class="delete-btn" data-id="${note.id}">Удалить</button>
         `;
         list.appendChild(noteElement);
@@ -93,11 +103,20 @@ function startEdit(id) {
     const notes = JSON.parse(localStorage.getItem('notes') || '[]');
     const note = notes.find(n => n.id === id);
     if (note) {
-        document.getElementById('note-input').value = note.content;
+        document.getElementById('title-input').value = note.title;
+        document.getElementById('content-input').value = note.content;
         document.getElementById('save-btn').textContent = 'Сохранить';
         isEditing = true;
         currentEditId = id;
     }
+}
+
+function resetForm() {
+    document.getElementById('title-input').value = '';
+    document.getElementById('content-input').value = '';
+    document.getElementById('save-btn').textContent = 'Добавить';
+    isEditing = false;
+    currentEditId = null;
 }
 
 function updateOnlineStatus() {
