@@ -122,7 +122,7 @@
 </div>
 
 <script>
-    const wsUrl = '/ws';
+    const wsUrl = 'localhost:3000/ws';
     const apiUrl = '/api/products';
 
     async function fetchProducts() {
@@ -280,7 +280,7 @@
         }
     }
 
-    const socket = new WebSocket(`ws://${window.location.host}/ws`);
+    const socket = new WebSocket('ws://localhost:3000/ws');
 
     socket.onopen = () => console.log('WebSocket подключен');
     socket.onmessage = (event) => {
